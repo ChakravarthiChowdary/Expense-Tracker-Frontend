@@ -308,6 +308,7 @@ const AddExpense = () => {
                     errors: { ...prevState.errors, expenseDate: "" },
                   }));
                 }}
+                maxDate={new Date()}
                 renderInput={(params: any) => (
                   <TextField
                     {...params}

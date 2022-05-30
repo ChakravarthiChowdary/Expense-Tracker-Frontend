@@ -10,9 +10,11 @@ import Paper from "@mui/material/Paper";
 import {
   Container,
   FormControl,
+  Grid,
   InputLabel,
   MenuItem,
   Select,
+  Typography,
 } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { getAllExpenses } from "../store/actions/expense";
@@ -20,6 +22,7 @@ import { useAppSelector } from "../store/store";
 import Loading from "../components/Loading";
 import Error from "../components/Error";
 import { ExpenseRes } from "../types/types";
+import BillCard from "../components/BillCard";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -41,9 +44,15 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-export default function MyExpenses() {
+interface IMyExpensesProps {
+  billsPage?: boolean;
+}
+
+const MyExpenses: React.FC<IMyExpensesProps> = ({ billsPage }) => {
   const dispatch: Dispatch<any> = useDispatch();
   const { loading, error, expenses } = useAppSelector((state) => state.expense);
+  const { user } = useAppSelector((state) => state.auth);
+  console.log(billsPage);
   const months = [
     "January",
     "February",
@@ -104,6 +113,11 @@ export default function MyExpenses() {
     })} ${date.getDate()}, ${date.getFullYear()}`;
   };
 
+  const totalAmount = filteredExpenses.reduce(
+    (totalValue, currValue) => totalValue + +currValue.expenseAmount,
+    0
+  );
+
   return (
     <Container
       sx={{
@@ -114,7 +128,7 @@ export default function MyExpenses() {
       }}
     >
       <div>
-        <FormControl sx={{ mb: 4, minWidth: 230 }} size="small">
+        <FormControl sx={{ mb: 2, minWidth: 230 }} size="small">
           <InputLabel id="month-select-label">Month</InputLabel>
           <Select
             labelId="month-select-label"
@@ -140,57 +154,88 @@ export default function MyExpenses() {
           </Select>
         </FormControl>
       </div>
-
-      {filteredExpenses.length <= 0 ? (
-        <Error message={"No expenses added in this month"} severity="info" />
-      ) : (
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 700 }} aria-label="customized table">
-            <TableHead>
-              <TableRow>
-                <StyledTableCell>Expense</StyledTableCell>
-                <StyledTableCell align="right">Amount</StyledTableCell>
-                <StyledTableCell align="right">
-                  Percentage in income
-                </StyledTableCell>
-                <StyledTableCell align="right">Bill uploaded</StyledTableCell>
-                <StyledTableCell align="right">Date</StyledTableCell>
-                <StyledTableCell align="right">Bill Link</StyledTableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredExpenses.map((expense: ExpenseRes) => (
-                <StyledTableRow key={expense._id}>
-                  <StyledTableCell component="th" scope="row">
-                    {expense.expenseType}
-                  </StyledTableCell>
-                  <StyledTableCell align="right">
-                    {expense.expenseAmount}
-                  </StyledTableCell>
-                  <StyledTableCell align="right">
-                    {+expense.percentageOfIncome}
-                  </StyledTableCell>
-                  <StyledTableCell align="right">
-                    {expense.expenseBillName !== "" ? "Yes" : "No"}
-                  </StyledTableCell>
-                  <StyledTableCell align="right">
-                    {getExpenseDate(expense.expenseDate)}
-                  </StyledTableCell>
-                  {expense.expenseBillPath !== "" ? (
-                    <StyledTableCell align="right">
-                      <a href={expense.expenseBillPath} target="_blank">
-                        {expense.expenseBillName}
-                      </a>
-                    </StyledTableCell>
-                  ) : (
-                    <StyledTableCell align="right">NA</StyledTableCell>
-                  )}
-                </StyledTableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+      {billsPage && (
+        <Grid container spacing={2} sx={{ p: 3 }}>
+          {filteredExpenses.filter((el) => el.expenseBillName !== "").length <=
+          0 ? (
+            <Error
+              message={"No bills uploaded for this month"}
+              severity="info"
+            />
+          ) : (
+            filteredExpenses.map((expense) => (
+              <BillCard expense={expense} key={expense._id} />
+            ))
+          )}
+        </Grid>
       )}
+
+      {!billsPage &&
+        (filteredExpenses.length <= 0 ? (
+          <Error message={"No expenses added in this month"} severity="info" />
+        ) : (
+          <>
+            <Paper sx={{ mb: 2, p: 2 }}>
+              <Typography sx={{ fontWeight: "bold" }}>
+                Total: ₹{totalAmount}
+              </Typography>
+              <Typography sx={{ fontWeight: "bold" }}>
+                Percentage in income:{" "}
+                {((totalAmount * 100) / +user.netIncome).toFixed(2)} %
+              </Typography>
+            </Paper>
+            <TableContainer component={Paper}>
+              <Table sx={{ minWidth: 700 }} aria-label="customized table">
+                <TableHead>
+                  <TableRow>
+                    <StyledTableCell>Expense</StyledTableCell>
+                    <StyledTableCell align="right">Amount</StyledTableCell>
+                    <StyledTableCell align="right">
+                      Percentage in income
+                    </StyledTableCell>
+                    <StyledTableCell align="right">
+                      Bill uploaded
+                    </StyledTableCell>
+                    <StyledTableCell align="right">Date</StyledTableCell>
+                    <StyledTableCell align="right">Bill Link</StyledTableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredExpenses.map((expense: ExpenseRes) => (
+                    <StyledTableRow key={expense._id}>
+                      <StyledTableCell component="th" scope="row">
+                        {expense.expenseType}
+                      </StyledTableCell>
+                      <StyledTableCell align="right">
+                        ₹{expense.expenseAmount}
+                      </StyledTableCell>
+                      <StyledTableCell align="right">
+                        {+expense.percentageOfIncome}%
+                      </StyledTableCell>
+                      <StyledTableCell align="right">
+                        {expense.expenseBillName !== "" ? "Yes" : "No"}
+                      </StyledTableCell>
+                      <StyledTableCell align="right">
+                        {getExpenseDate(expense.expenseDate)}
+                      </StyledTableCell>
+                      {expense.expenseBillPath !== "" ? (
+                        <StyledTableCell align="right">
+                          <a href={expense.expenseBillPath} target="_blank">
+                            {expense.expenseBillName}
+                          </a>
+                        </StyledTableCell>
+                      ) : (
+                        <StyledTableCell align="right">NA</StyledTableCell>
+                      )}
+                    </StyledTableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        ))}
     </Container>
   );
-}
+};
+
+export default MyExpenses;

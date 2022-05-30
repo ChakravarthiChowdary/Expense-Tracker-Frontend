@@ -23,11 +23,17 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
+import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import ListItemText from "@mui/material/ListItemText";
 import DescriptionIcon from "@mui/icons-material/Description";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import LockOpenIcon from "@mui/icons-material/LockOpen";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import PaidIcon from "@mui/icons-material/Paid";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { useAppSelector } from "../store/store";
+import { useDispatch } from "react-redux";
+import { AUTH_SIGNOUT } from "../store/actions/auth";
 
 const drawerWidth = 240;
 
@@ -86,6 +92,8 @@ const NavBar = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
+  const { user } = useAppSelector((state) => state.auth);
+  const dispatch: React.Dispatch<any> = useDispatch();
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -155,24 +163,57 @@ const NavBar = () => {
       open={isMobileMenuOpen}
       onClose={handleMobileMenuClose}
     >
-      <MenuItem>
-        <IconButton size="large" color="inherit">
-          <DashboardIcon />
-        </IconButton>
-        <p>Dashboard</p>
-      </MenuItem>
-      <MenuItem>
-        <IconButton size="large" color="inherit">
-          <AddCircleOutlineIcon />
-        </IconButton>
-        <p>Add Expense</p>
-      </MenuItem>
-      <MenuItem onClick={() => navigate("/addexpense")}>
-        <IconButton size="large" color="inherit">
-          <AccountCircleIcon />
-        </IconButton>
-        <p>My Profile</p>
-      </MenuItem>
+      {user ? (
+        <>
+          <MenuItem>
+            <IconButton size="large" color="inherit">
+              <DashboardIcon />
+            </IconButton>
+            <p>Dashboard</p>
+          </MenuItem>
+          <MenuItem>
+            <IconButton size="large" color="inherit">
+              <AddCircleOutlineIcon />
+            </IconButton>
+            <p>Add Expense</p>
+          </MenuItem>
+          <MenuItem onClick={() => navigate("/addexpense")}>
+            <IconButton size="large" color="inherit">
+              <AccountCircleIcon />
+            </IconButton>
+            <p>My Profile</p>
+          </MenuItem>
+        </>
+      ) : (
+        <>
+          <MenuItem>
+            <IconButton
+              size="large"
+              color="inherit"
+              onClick={() => navigate("/")}
+            >
+              <LockOpenIcon />
+            </IconButton>
+            <p>Sign In</p>
+          </MenuItem>
+          <MenuItem>
+            <IconButton
+              size="large"
+              color="inherit"
+              onClick={() => navigate("/signup")}
+            >
+              <ExitToAppIcon />
+            </IconButton>
+            <p>Sign Up</p>
+          </MenuItem>
+          <MenuItem onClick={() => navigate("/forgotPassword")}>
+            <IconButton size="large" color="inherit">
+              <VpnKeyIcon />
+            </IconButton>
+            <p>Forgot Password</p>
+          </MenuItem>
+        </>
+      )}
     </Menu>
   );
 
@@ -180,26 +221,50 @@ const NavBar = () => {
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
         <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            edge="start"
-            sx={{ mr: 2, ...(open && { display: "none" }) }}
-          >
-            <MenuIcon />
-          </IconButton>
+          {user && (
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              onClick={handleDrawerOpen}
+              edge="start"
+              sx={{ mr: 2, ...(open && { display: "none" }) }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Expense Tracker
           </Typography>
           <Box sx={{ display: { xs: "none", md: "flex" } }}>
-            <Button color="inherit" onClick={() => navigate("/dashboard")}>
-              Dashboard
-            </Button>
+            {user ? (
+              <>
+                <Button color="inherit" onClick={() => navigate("/")}>
+                  Expenses
+                </Button>
+                <Button color="inherit" onClick={() => navigate("/myProfile")}>
+                  My Profile
+                </Button>
+                <Button
+                  color="inherit"
+                  onClick={() => {
+                    dispatch({ type: AUTH_SIGNOUT });
+                    navigate("/", { replace: true });
+                  }}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button color="inherit" onClick={() => navigate("/")}>
+                  Sign In
+                </Button>
 
-            <Button color="inherit" onClick={() => navigate("/myProfile")}>
-              My Profile
-            </Button>
+                <Button color="inherit" onClick={() => navigate("/signup")}>
+                  Sign Up
+                </Button>
+              </>
+            )}
           </Box>
           <Box sx={{ display: { xs: "flex", md: "none" } }}>
             <IconButton
